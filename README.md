@@ -2,6 +2,8 @@
 
 A web application for group-based weekly reflections, built with Next.js and Supabase.
 
+> **Note**: This repository contains both the working Next.js application and the original product vision/planning documentation. See the `docs/`, `product-spec/`, and other documentation folders for the original product vision and design documents.
+
 ## 🚀 Features
 
 - **Magic Link Authentication** - Passwordless login via email
