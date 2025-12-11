@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
+import { supabaseServerAction } from "@/lib/supabase-server";
+import { revalidatePath } from "next/cache";
 
 export async function POST(request: Request) {
-  const supabase = await supabaseServer();
+  const supabase = await supabaseServerAction();
 
   const {
     data: { user },
@@ -28,8 +29,26 @@ export async function POST(request: Request) {
 
   if (error) {
     console.error("Group create error:", error);
+    console.error("Error details:", JSON.stringify(error, null, 2));
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.redirect(`/groups/${data.id}`);
+  if (!data || !data.id) {
+    console.error("Group created but no data returned");
+    return NextResponse.json({ error: "Group creation failed" }, { status: 500 });
+  }
+
+  console.log("✅ Group created successfully:", data.id);
+
+  // Add creator as member
+  await supabase.from("group_members").insert({
+    group_id: data.id,
+    user_id: user.id,
+  });
+
+  revalidatePath("/groups");
+  revalidatePath("/groups/mine");
+
+  const redirectUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/groups/${data.id}`;
+  return NextResponse.redirect(redirectUrl);
 }

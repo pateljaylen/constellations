@@ -30,7 +30,12 @@ export default async function CreateGroupPage() {
 
             <div>
               <label className="block text-sm mb-1">Description</label>
-              <Input type="text" name="description" required />
+              <textarea
+                name="description"
+                required
+                className="w-full px-3 py-2 border rounded-md"
+                rows={3}
+              />
             </div>
 
             <Button type="submit" className="w-full">
