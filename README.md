@@ -1,36 +1,169 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Constellation
 
-## Getting Started
+A web application for group-based weekly reflections, built with Next.js and Supabase.
 
-First, run the development server:
+## 🚀 Features
+
+- **Magic Link Authentication** - Passwordless login via email
+- **Groups** - Create and join reflection groups
+- **Weekly Reflections** - Submit and view reflections within groups
+- **User Profiles** - Automatic profile creation on signup
+
+## 🛠️ Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Authentication**: Supabase Auth (Magic Links)
+- **Database**: Supabase (PostgreSQL)
+- **UI**: shadcn/ui + Tailwind CSS
+- **Language**: TypeScript
+
+## 📋 Prerequisites
+
+- Node.js 18+ 
+- npm/yarn/pnpm
+- Supabase account and project
+
+## 🔧 Setup
+
+1. **Clone and install dependencies:**
+
+```bash
+npm install
+```
+
+2. **Set up environment variables:**
+
+Create a `.env.local` file in the root directory:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+```
+
+3. **Set up Supabase database:**
+
+Run the SQL schema from `schema.sql` in your Supabase SQL editor to create the necessary tables and triggers.
+
+4. **Configure Supabase Email Template:**
+
+In your Supabase dashboard:
+- Go to Authentication → Email Templates
+- Edit the "Magic Link" template
+- Ensure it contains `{{ .ConfirmationURL }}` in the link
+- Set the redirect URL to: `http://localhost:3000/auth/callback` (or your production URL)
+
+5. **Run the development server:**
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📁 Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+app/
+  ├── auth/
+  │   └── callback/          # Auth callback route handler
+  ├── login/                 # Login page
+  ├── me/                    # User profile page
+  ├── groups/
+  │   ├── [id]/             # Individual group page
+  │   ├── create/           # Create group page
+  │   ├── mine/             # User's groups
+  │   └── page.tsx          # All groups listing
+  └── api/
+      └── groups/
+          └── [id]/
+              ├── join/      # Join group API route
+              └── reflect/   # Submit reflection API route
 
-## Learn More
+lib/
+  ├── supabase-browser.ts   # Browser client (client components)
+  └── supabase-server.ts    # Server clients (SSR + API routes)
 
-To learn more about Next.js, take a look at the following resources:
+components/
+  └── ui/                   # shadcn/ui components
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🏗️ Architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Supabase Client Architecture
 
-## Deploy on Vercel
+This project uses **two types of Supabase server clients**:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **`supabaseServer()`** - For Server Components (read-only)
+   - Cannot write cookies
+   - Use for data fetching in Server Components
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+2. **`supabaseServerAction()`** - For API Routes and Server Actions (read/write)
+   - Can write cookies
+   - Use for mutations and auth operations
+
+3. **`supabaseBrowser()`** - For Client Components
+   - Browser-side client
+   - Use in `"use client"` components
+
+### Key Patterns
+
+- **Server Components** for data fetching and rendering
+- **API Route Handlers** for mutations (POST/PUT/DELETE)
+- **Server Actions** for form submissions
+- **Dynamic routes** use `params: Promise<{ id: string }>` (Next.js 15+)
+
+## 🗄️ Database Schema
+
+See `schema.sql` for the complete database setup. Key tables:
+
+- `profiles` - User profiles (auto-created via trigger)
+- `groups` - Reflection groups
+- `group_members` - Group membership
+- `reflections` - Weekly reflections
+
+## 🐛 Common Issues & Solutions
+
+### "Cookies can only be modified in a Server Action or Route Handler"
+
+**Solution**: Use `supabaseServerAction()` instead of `supabaseServer()` in API routes.
+
+### "Missing tokens in callback"
+
+**Solution**: Ensure you're using `/auth/callback/route.ts` (API route), not `page.tsx`.
+
+### "params.id is a Promise"
+
+**Solution**: In Next.js 15+, await params:
+```ts
+export async function POST(req, { params }) {
+  const { id } = await params;
+  // ...
+}
+```
+
+### Magic link not working
+
+**Solution**: 
+- Verify email template contains `{{ .ConfirmationURL }}`
+- Check redirect URL matches Supabase project settings
+- Ensure callback route is at `/auth/callback/route.ts`
+
+## 📚 Documentation
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Detailed architecture and mental model
+- [CONTEXT.md](./CONTEXT.md) - Full context for AI assistants
+- [schema.sql](./schema.sql) - Database schema
+
+## 🚧 Roadmap
+
+- [ ] Improve reflections UI
+- [ ] Add group leave functionality
+- [ ] Restrict reflections to one per week
+- [ ] Group invite links
+- [ ] User settings page
+- [ ] Email verification UX improvements
+
+## 📝 License
+
+MIT
